@@ -1,10 +1,19 @@
+import os
+
+# Must be set BEFORE importing TensorFlow to take effect.
+# Limits thread pool creation to avoid pthread_create() failures on Railway.
+os.environ.setdefault("TF_NUM_INTEROP_THREADS", "1")
+os.environ.setdefault("TF_NUM_INTRAOP_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("TF_ENABLE_ONEDNN_OPTS", "0")
+os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List
 import joblib
 import json
-import os
 from datetime import datetime
 from contextlib import asynccontextmanager
 
@@ -13,6 +22,10 @@ from tensorflow import keras  # pylint: disable=no-name-in-module
 import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
+
+# Limit TF parallelism after import as a second layer of protection.
+tf.config.threading.set_inter_op_parallelism_threads(1)
+tf.config.threading.set_intra_op_parallelism_threads(1)
 
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env.local"))
 
@@ -299,8 +312,8 @@ def build_feature_vector(data: SensorInput) -> np.ndarray:
         if d.get(k) in [None, 0.0]:
             d[k] = v
 
-    vec = np.array([d[f] for f in FEATURES], dtype=float).reshape(1, -1)
-    return vec
+    values = [d[f] for f in FEATURES]
+    return pd.DataFrame([values], columns=FEATURES)
 
 
 def calculate_display_rul(rul_hours: float, fail_prob: float) -> float:
@@ -326,20 +339,21 @@ def calculate_display_rul(rul_hours: float, fail_prob: float) -> float:
     return round(estimated, 2)
 
 
-def predict_rul_from_vector(vec_83: np.ndarray) -> float:
+def predict_rul_from_vector(vec_83) -> float:
     """Predict RUL dari single feature vector (replikasi jadi sequence 24-step)."""
+    arr = vec_83.values if hasattr(vec_83, "values") else vec_83
     # Pad/truncate ke n_features LSTM
-    if vec_83.shape[1] < LSTM_N_FEATURES:
-        pad = np.zeros((1, LSTM_N_FEATURES - vec_83.shape[1]))
-        vec_lstm = np.hstack([vec_83, pad])
+    if arr.shape[1] < LSTM_N_FEATURES:
+        pad = np.zeros((1, LSTM_N_FEATURES - arr.shape[1]))
+        vec_lstm = np.hstack([arr, pad])
     else:
-        vec_lstm = vec_83[:, :LSTM_N_FEATURES]
+        vec_lstm = arr[:, :LSTM_N_FEATURES]
 
     # Replikasi jadi sequence 24-step
     seq = np.tile(vec_lstm, (SEQ_LENGTH, 1))
     seq_scaled = scaler_rul_X.transform(seq).reshape(1, SEQ_LENGTH, -1)
 
-    rul_scaled = float(lstm_rul.predict(seq_scaled, verbose=0)[0, 0])
+    rul_scaled = float(lstm_rul(seq_scaled, training=False).numpy()[0, 0])
     rul_hours = float(scaler_rul_y.inverse_transform([[rul_scaled]])[0, 0])
     rul_hours = rul_hours + RUL_BIAS  # bias correction
     return float(np.clip(rul_hours, 0, RUL_CAP))
@@ -348,14 +362,15 @@ def predict_rul_from_vector(vec_83: np.ndarray) -> float:
 
 
 
-def predict_anomaly_from_vector(vec_83: np.ndarray) -> tuple:
+def predict_anomaly_from_vector(vec_83) -> tuple:
     """Predict anomaly score dari single vector. Return (score, is_anomaly)."""
+    arr = vec_83.values if hasattr(vec_83, "values") else vec_83
     # Pad ke n_features yang diharapkan oleh imputer/scaler
-    if vec_83.shape[1] < IFOREST_N_FEATURES:
-        pad = np.zeros((1, IFOREST_N_FEATURES - vec_83.shape[1]))
-        vec_anom = np.hstack([vec_83, pad])
+    if arr.shape[1] < IFOREST_N_FEATURES:
+        pad = np.zeros((1, IFOREST_N_FEATURES - arr.shape[1]))
+        vec_anom = np.hstack([arr, pad])
     else:
-        vec_anom = vec_83[:, :IFOREST_N_FEATURES]
+        vec_anom = arr[:, :IFOREST_N_FEATURES]
 
     # Pipeline 2-step: imputer → scaler
     vec_imputed = iforest_imputer.transform(vec_anom)
