@@ -26,9 +26,8 @@ MODEL_DIR = os.path.join(BASE_DIR, "models")
 SEQ_LENGTH = 24            # LSTM window
 RUL_CAP = 168.0            # 7 hari
 
-SUPABASE_URL = os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY")
-
+GROQ_API_URL = os.getenv("GROQ_API_URL")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # ────────────────────────────────────────────────────────────────
 # LOAD MODELS (sekali saat import)
 # ────────────────────────────────────────────────────────────────
@@ -99,18 +98,6 @@ IFOREST_THRESHOLD_PROD = 0.62
 print(f"   ⚙ Production threshold override: {IFOREST_THRESHOLD_PROD:.4f}")
 print(f"   📝 Reason: Distribution shift (training mean ~0.44, production ~0.60)")
 IFOREST_THRESHOLD = IFOREST_THRESHOLD_PROD
-
-# ── Supabase (optional) ──
-supabase = None
-if SUPABASE_URL and SUPABASE_KEY:
-    try:
-        from supabase import create_client
-        supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-        print("   ✓ Supabase connected")
-    except Exception as e:
-        print(f"   ⚠ Supabase failed: {e}")
-
-print("✅ All models ready!\n")
 
 # ────────────────────────────────────────────────────────────────
 # APP
