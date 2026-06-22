@@ -1,0 +1,26 @@
+{
+  "model": "IsolationForest",
+  "n_estimators_baseline": 100,
+  "n_estimators_tuned": 200,
+  "contamination": 0.090898,
+  "split": "per_machine_chronological_80_20",
+  "train_size": 79232,
+  "test_size": 19808,
+  "n_features": 84,
+  "taskA_positive_rate_train": 0.090898,
+  "taskA_positive_rate_test": 0.090923,
+  "baseline": {
+    "roc_auc": 0.60588,
+    "pr_auc": 0.227137
+  },
+  "tuned": {
+    "taskA_roc_auc": 0.601625,
+    "taskA_pr_auc": 0.228536,
+    "taskA_f1": 0.385488,
+    "taskA_precision": 0.462675,
+    "taskA_recall": 0.330372,
+    "taskB_critical_roc_auc": 0.988572,
+    "taskB_critical_pr_auc": 0.581519
+  },
+  "threshold": 0.505966
+}

@@ -1,0 +1,74 @@
+{
+  "approach": "Regression with RUL cap 168h",
+  "model": "LSTM (128 -> 64 -> 32 -> 16 -> 1-sigmoid)",
+  "loss": "Huber(delta=0.1)",
+  "seq_length": 24,
+  "rul_cap_hours": 168,
+  "n_features": 84,
+  "train_samples": 67283,
+  "val_samples": 11873,
+  "test_samples": 19904,
+  "test_metrics": {
+    "scale_hours": {
+      "rmse": 9.820499420166016,
+      "mae": 2.5996768474578857,
+      "mape_pct": 3.1603001058101654
+    },
+    "scale_normalized_0_1": {
+      "rmse": 0.05845535174012184,
+      "mae": 0.015474269166588783
+    },
+    "r2_scale_invariant": 0.6368449926376343
+  },
+  "baseline_predict_mean": {
+    "rmse_h": 17.718244552612305,
+    "mae_h": 10.923380851745605
+  },
+  "bias_diagnostics": {
+    "mean_error_h": -0.8673097491264343,
+    "median_error_h": -1.477203369140625,
+    "std_error_h": 9.782125473022461
+  },
+  "test_metrics_by_range": [
+    {
+      "range": "Immediate (0-24h)",
+      "n_samples": 96,
+      "rmse_h": 53.33000183105469,
+      "mae_h": 19.860000610351562,
+      "bias_h": 19.760000228881836,
+      "mean_pred": 31.299999237060547,
+      "mean_actual": 11.5
+    },
+    {
+      "range": "Critical  (24-72h)",
+      "n_samples": 158,
+      "rmse_h": 68.05000305175781,
+      "mae_h": 44.09000015258789,
+      "bias_h": 43.86000061035156,
+      "mean_pred": 88.19999694824219,
+      "mean_actual": 44.400001525878906
+    },
+    {
+      "range": "Warning   (72-168h)",
+      "n_samples": 156,
+      "rmse_h": 59.650001525878906,
+      "mae_h": 53.790000915527344,
+      "bias_h": 53.779998779296875,
+      "mean_pred": 166.39999389648438,
+      "mean_actual": 112.5999984741211
+    },
+    {
+      "range": "Healthy   (=168h)",
+      "n_samples": 19494,
+      "rmse_h": 4.300000190734863,
+      "mae_h": 1.7699999809265137,
+      "bias_h": -1.7699999809265137,
+      "mean_pred": 166.1999969482422,
+      "mean_actual": 168.0
+    }
+  ],
+  "training": {
+    "epochs_trained": 17,
+    "best_val_loss": 0.0030017956160008907
+  }
+}
